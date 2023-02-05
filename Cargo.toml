@@ -1,0 +1,12 @@
+[package]
+name = "sqdocs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+html-escape = "0.2.13"
+markdown = { git = "https://github.com/kyle-mccarthy/markdown-rs", branch = "fix/serde-attr" }
+once_cell = "1.17.0"
+sqparse = "0.1.0"

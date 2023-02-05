@@ -1,0 +1,70 @@
+:root {
+	--sidebar-width: 150px
+}
+
+
+body {
+	/* background-color: #333638; */
+	background-color: #1e2020;
+	color: white;
+	font-family: BlinkMacSystemFont, Segoe UI;
+}
+
+pre, code {
+	/* background-color: #202324; */
+	background-color: #333638;
+	font-family: monospace;
+}
+
+pre {
+	padding: 25px 30px;
+}
+
+p>code {
+	padding: 4px 5px;
+}
+
+main {
+	padding-left: var(--sidebar-width);
+}
+
+/* .code-block {
+	padding: 25px 30px;
+	background-color: #333638;
+} */
+
+.description {
+	padding-left: 25px;
+}
+
+.sidebar {
+	position: fixed;
+	top: 0;
+	left: 0;
+	height: 100vh;
+	padding-top: 10px;
+	width: var(--sidebar-width);
+	background-color: #36383a;
+	overflow-y: scroll;
+	scrollbar-width: thin;
+}
+
+.sidebar-elems {
+	padding-left: 20px
+}
+
+.sidebar-block {
+	margin: 0px;
+	padding: 0px;
+	margin-bottom: 50px;
+}
+
+.sidebar-block li {
+	list-style: none;
+	margin: 0px;
+	padding: 0px;
+}
+
+.sidebar-logo-container {
+	text-align: center;
+}

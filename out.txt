@@ -1,0 +1,363 @@
+parsing "test\\test.nut"
+TestFnc
+FunnyTest
+unimplemented globalization
+[
+    FunctionInfo {
+        return_type: None,
+        identifier: "TestFnc",
+        args: NonVariable {
+            args: Some(
+                SeparatedListTrailing1 {
+                    items: [
+                        (
+                            FunctionArg {
+                                ty: Some(
+                                    Plain(
+                                        PlainType {
+                                            name: Identifier {
+                                                value: "string",
+                                                token: Token {
+                                                    ty: Identifier(
+                                                        "string",
+                                                    ),
+                                                    range: 401..407,
+                                                    before_lines: [],
+                                                    comments: [],
+                                                    new_line: None,
+                                                },
+                                            },
+                                        },
+                                    ),
+                                ),
+                                name: Identifier {
+                                    value: "s",
+                                    token: Token {
+                                        ty: Identifier(
+                                            "s",
+                                        ),
+                                        range: 408..409,
+                                        before_lines: [],
+                                        comments: [],
+                                        new_line: None,
+                                    },
+                                },
+                                initializer: Some(
+                                    VarInitializer {
+                                        assign: Token {
+                                            ty: Terminal(
+                                                Assign,
+                                            ),
+                                            range: 410..411,
+                                            before_lines: [],
+                                            comments: [],
+                                            new_line: None,
+                                        },
+                                        value: Literal(
+                                            LiteralExpression {
+                                                literal: String(
+                                                    Literal(
+                                                        "test",
+                                                    ),
+                                                ),
+                                                token: Token {
+                                                    ty: Literal(
+                                                        String(
+                                                            Literal(
+                                                                "test",
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    range: 412..418,
+                                                    before_lines: [],
+                                                    comments: [],
+                                                    new_line: None,
+                                                },
+                                            },
+                                        ),
+                                    },
+                                ),
+                            },
+                            Token {
+                                ty: Terminal(
+                                    Comma,
+                                ),
+                                range: 418..419,
+                                before_lines: [],
+                                comments: [],
+                                new_line: None,
+                            },
+                        ),
+                    ],
+                    last_item: FunctionArg {
+                        ty: Some(
+                            FunctionRef(
+                                FunctionRefType {
+                                    return_type: Some(
+                                        Plain(
+                                            PlainType {
+                                                name: Identifier {
+                                                    value: "void",
+                                                    token: Token {
+                                                        ty: Identifier(
+                                                            "void",
+                                                        ),
+                                                        range: 420..424,
+                                                        before_lines: [],
+                                                        comments: [],
+                                                        new_line: None,
+                                                    },
+                                                },
+                                            },
+                                        ),
+                                    ),
+                                    functionref: Token {
+                                        ty: Terminal(
+                                            FunctionRef,
+                                        ),
+                                        range: 425..436,
+                                        before_lines: [],
+                                        comments: [],
+                                        new_line: None,
+                                    },
+                                    open: Token {
+                                        ty: Terminal(
+                                            OpenBracket,
+                                        ),
+                                        range: 436..437,
+                                        before_lines: [],
+                                        comments: [],
+                                        new_line: None,
+                                    },
+                                    args: None,
+                                    close: Token {
+                                        ty: Terminal(
+                                            CloseBracket,
+                                        ),
+                                        range: 437..438,
+                                        before_lines: [],
+                                        comments: [],
+                                        new_line: None,
+                                    },
+                                },
+                            ),
+                        ),
+                        name: Identifier {
+                            value: "c",
+                            token: Token {
+                                ty: Identifier(
+                                    "c",
+                                ),
+                                range: 439..440,
+                                before_lines: [],
+                                comments: [],
+                                new_line: None,
+                            },
+                        },
+                        initializer: Some(
+                            VarInitializer {
+                                assign: Token {
+                                    ty: Terminal(
+                                        Assign,
+                                    ),
+                                    range: 441..442,
+                                    before_lines: [],
+                                    comments: [],
+                                    new_line: None,
+                                },
+                                value: Function(
+                                    FunctionExpression {
+                                        return_type: Some(
+                                            Plain(
+                                                PlainType {
+                                                    name: Identifier {
+                                                        value: "void",
+                                                        token: Token {
+                                                            ty: Identifier(
+                                                                "void",
+                                                            ),
+                                                            range: 443..447,
+                                                            before_lines: [],
+                                                            comments: [],
+                                                            new_line: None,
+                                                        },
+                                                    },
+                                                },
+                                            ),
+                                        ),
+                                        function: Token {
+                                            ty: Terminal(
+                                                Function,
+                                            ),
+                                            range: 448..456,
+                                            before_lines: [],
+                                            comments: [],
+                                            new_line: None,
+                                        },
+                                        declaration: FunctionDeclaration {
+                                            environment: None,
+                                            open: Token {
+                                                ty: Terminal(
+                                                    OpenBracket,
+                                                ),
+                                                range: 456..457,
+                                                before_lines: [],
+                                                comments: [],
+                                                new_line: None,
+                                            },
+                                            args: NonVariable {
+                                                args: None,
+                                            },
+                                            close: Token {
+                                                ty: Terminal(
+                                                    CloseBracket,
+                                                ),
+                                                range: 457..458,
+                                                before_lines: [],
+                                                comments: [],
+                                                new_line: None,
+                                            },
+                                            captures: None,
+                                            body: Statement {
+                                                ty: Block(
+                                                    BlockStatement {
+                                                        open: Token {
+                                                            ty: Terminal(
+                                                                OpenBrace,
+                                                            ),
+                                                            range: 458..459,
+                                                            before_lines: [],
+                                                            comments: [],
+                                                            new_line: None,
+                                                        },
+                                                        statements: [
+                                                            Statement {
+                                                                ty: Expression(
+                                                                    ExpressionStatement {
+                                                                        value: Call(
+                                                                            CallExpression {
+                                                                                function: Var(
+                                                                                    VarExpression {
+                                                                                        name: Identifier {
+                                                                                            value: "print",
+                                                                                            token: Token {
+                                                                                                ty: Identifier(
+                                                                                                    "print",
+                                                                                                ),
+                                                                                                range: 459..464,
+                                                                                                before_lines: [],
+                                                                                                comments: [],
+                                                                                                new_line: None,
+                                                                                            },
+                                                                                        },
+                                                                                    },
+                                                                                ),
+                                                                                open: Token {
+                                                                                    ty: Terminal(
+                                                                                        OpenBracket,
+                                                                                    ),
+                                                                                    range: 464..465,
+                                                                                    before_lines: [],
+                                                                                    comments: [],
+                                                                                    new_line: None,
+                                                                                },
+                                                                                arguments: Some(
+                                                                                    SeparatedListTrailing1 {
+                                                                                        items: [],
+                                                                                        last_item: Literal(
+                                                                                            LiteralExpression {
+                                                                                                literal: String(
+                                                                                                    Literal(
+                                                                                                        "smth",
+                                                                                                    ),
+                                                                                                ),
+                                                                                                token: Token {
+                                                                                                    ty: Literal(
+                                                                                                        String(
+                                                                                                            Literal(
+                                                                                                                "smth",
+                                                                                                            ),
+                                                                                                        ),
+                                                                                                    ),
+                                                                                                    range: 465..471,
+                                                                                                    before_lines: [],
+                                                                                                    comments: [],
+                                                                                                    new_line: None,
+                                                                                                },
+                                                                                            },
+                                                                                        ),
+                                                                                        trailing: None,
+                                                                                    },
+                                                                                ),
+                                                                                close: Token {
+                                                                                    ty: Terminal(
+                                                                                        CloseBracket,
+                                                                                    ),
+                                                                                    range: 471..472,
+                                                                                    before_lines: [],
+                                                                                    comments: [],
+                                                                                    new_line: None,
+                                                                                },
+                                                                                post_initializer: None,
+                                                                            },
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                end: None,
+                                                            },
+                                                        ],
+                                                        close: Token {
+                                                            ty: Terminal(
+                                                                CloseBrace,
+                                                            ),
+                                                            range: 472..473,
+                                                            before_lines: [],
+                                                            comments: [],
+                                                            new_line: None,
+                                                        },
+                                                    },
+                                                ),
+                                                end: None,
+                                            },
+                                        },
+                                    },
+                                ),
+                            },
+                        ),
+                    },
+                    trailing: None,
+                },
+            ),
+        },
+        description: "<div class=\"description\"><h1>Test</h1>\n<p>multiline doc comment</p>\n<p>line 2</p>\n<p><code>test1</code></p>\n<pre><code>var l = TestFnc() // null\nprintt( l )\n</code></pre>\n&lt;script&gt;alert(&quot;epic haxxor&quot;)&lt;/script&gt;\n</div>",
+    },
+    FunctionInfo {
+        return_type: Some(
+            Plain(
+                PlainType {
+                    name: Identifier {
+                        value: "FunnyStruct",
+                        token: Token {
+                            ty: Identifier(
+                                "FunnyStruct",
+                            ),
+                            range: 494..505,
+                            before_lines: [
+                                TokenLine {
+                                    comments: [],
+                                },
+                            ],
+                            comments: [],
+                            new_line: None,
+                        },
+                    },
+                },
+            ),
+        ),
+        identifier: "FunnyTest",
+        args: NonVariable {
+            args: None,
+        },
+        description: "<div class=\"description\"><p>No description given</p></div>",
+    },
+]
