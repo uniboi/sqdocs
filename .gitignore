@@ -2,3 +2,5 @@
 /tests
 /.vscode
 /out
+/test
+out.txt
