@@ -93,6 +93,7 @@ fn generate_docs_for_mod(path: OsString) -> io::Result<()> {
             match &statement.ty {
                 StatementType::FunctionDeclaration(d) => {
                     if document_all_methods || expected_methods.contains(d.name.last_item.value) {
+						println!("{:#?}", d);
                         vs.push((
                             Box::leak(Box::new(FunctionInfo {
                                 decl: d.clone(),
@@ -119,47 +120,26 @@ fn generate_docs_for_mod(path: OsString) -> io::Result<()> {
         }
     }
 
+    let sidebar = format!(
+		"<nav class=\"sidebar\"><div class=\"sidebar-logo-container\"><img src=\"../resource/nut.png\"></div><div class=\"sidebar-elems\"><h3>Functions</h3><ul class=\"sidebar-block\">{}</ul><h3>Structs</h3><ul class=\"sidebar-block\">{}</ul></div></nav>",
+		vs.iter().map(|(f,_,_)|format!("<li><a href=\"./fn_{}.html\" title=\"temp\">{}</a></li>", f.identifier,f.identifier)).collect::<String>(),
+		// documented_structs.iter().map(|s|format!("<li><a href=\"./st_{}.html\">{}</a></li>",s.identifier ,s.identifier)).collect::<String>()
+		""
+	);
+
     for v in vs {
         let (def, mut tkns, mut ast) = v;
-        println!("{}", def.identifier);
+        println!("generating docs for {}", def.identifier);
 
+        write_function_html(def, &sidebar)?;
+
+        // TODO: this leaks lmao
         unsafe {
             let _sb = Box::from_raw(def);
             let _cb = Box::from(&mut tkns);
             let _pb = Box::from(&mut ast);
         }
-
-        // println!("{}", def.identifier);
     }
-
-    // for script in scripts {
-    //     let script_content = fs::read_to_string(script).expect("Failed reading file");
-    //     let tokens = tokenize(&script_content, sqparse::Flavor::SquirrelRespawn).unwrap();
-    //     let ast = parse(&tokens).unwrap();
-
-    //     let mut document_all_methods = false;
-    //     let mut expected_methods = std::collections::HashSet::<&str>::new();
-
-    //     for statement in &ast.statements {
-    //         match &statement.ty {
-    //             StatementType::Global(g) => println!("not implemented"),
-    //             StatementType::GlobalizeAllFunctions(_) => document_all_methods = true,
-    //             StatementType::FunctionDeclaration(d) => {
-    //                 if document_all_methods || expected_methods.contains(&d.name.last_item.value) {
-    //                     fns.push(FunctionInfo {
-    //                         // return_type: d.return_type.clone(),
-    //                         // args: todo!(),
-    // 						decl: d.clone(),
-    //                         identifier: &d.name.last_item.value,
-    //                         description: format_comments(&d.function.before_lines),
-    //                     })
-    //                 }
-    //             }
-    //             StatementType::StructDeclaration(s) => (),
-    //             _ => (),
-    //         }
-    //     }
-    // }
 
     Ok(())
 }
@@ -179,70 +159,6 @@ fn get_all_scripts(path: &OsString) -> io::Result<Vec<std::path::PathBuf>> {
 
     Ok(scripts)
 }
-
-// fn get_globals_info<'a>(
-//     path: OsString,
-// ) -> io::Result<Box<(Vec<FunctionInfo<'a>>, Vec<StructInfo<'a>>, Vec<sqparse::ast::Program<'a>>)>> {
-//     let mut fns = Vec::<FunctionInfo>::new();
-//     let mut sts = Vec::<StructInfo>::new();
-// 	let mut asts = Vec::<sqparse::ast::Program>::new();
-
-//     for entry in fs::read_dir(path)? {
-//         let entry = entry?;
-//         let path = entry.path();
-//         println!("{:#?}", path);
-//         if path.is_dir() {
-//             let (mut n_fns, mut n_sts, _) = *get_globals_info(path.into())?;
-//             fns.append(&mut n_fns);
-//             sts.append(&mut n_sts);
-//         } else {
-//             // let (n_fns, n_sts) =
-//             println!("parsing {path:?}");
-//             let binding = fs::read_to_string(path).expect("Failed reading file");
-//             let tokens = tokenize(&binding, sqparse::Flavor::SquirrelRespawn).unwrap();
-//             let ast = parse(&tokens).unwrap();
-
-//             let mut document_all_methods = false;
-//             let mut expected_methods = std::collections::HashSet::<&str>::new();
-
-//             for statement in ast.statements {
-//                 match statement.ty {
-//                     StatementType::Global(g) => println!(
-//                         "{}",
-//                         match g.declaration {
-//                             sqparse::ast::GlobalDeclaration::Function { function: _, name } => {
-//                                 expected_methods.insert(&*name.last_item.value);
-//                                 format!("{}", &*name.last_item.value)
-//                             }
-//                             _ => format!("unimplemented globalization"),
-//                         }
-//                     ),
-//                     StatementType::GlobalizeAllFunctions(_) => document_all_methods = true,
-//                     StatementType::FunctionDeclaration(d) => {
-//                         if document_all_methods
-//                             || expected_methods.contains(&d.name.last_item.value)
-//                         {
-//                             fns.push(FunctionInfo {
-//                                 identifier: d.name.last_item.value,
-//                                 args: d.declaration.args,
-//                                 description: format_comments(&d.function.before_lines),
-//                                 return_type: d.return_type,
-//                             });
-//                         }
-//                         ()
-//                     }
-//                     StatementType::StructDeclaration(s) => sts.push(StructInfo {
-//                         identifier: s.name.value,
-//                         properties: s.declaration.properties,
-//                     }),
-//                     _ => (),
-//                 }
-//             }
-//         }
-//     }
-
-//     Ok(Box::new((fns, sts)))
-// }
 
 fn get_globals_info_of_file<'a>(
     path: OsString,
@@ -387,6 +303,7 @@ fn get_function_representation(f: &FunctionInfo, sidebar: &String) -> String {
 
 fn format_comments(comments: &Vec<TokenLine>) -> String {
     let no_desc = String::from("<p>No description given</p>");
+	// println!("{comments:#?}");
     format!(
         "<div class=\"description\">{}</div>",
         match comments.iter().last() {
