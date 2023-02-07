@@ -1,15 +1,18 @@
 mod rep;
 
-use std::ffi::OsStr;
-use std::path::Path;
 use std::{ffi::OsString, fs, io, io::Write};
 
-use sqparse::ast::{
-    FunctionArg, FunctionArgs, FunctionDeclarationStatement, Program, StatementType,
-    StructProperty, Type,
-};
+use serde::{Deserialize, Serialize};
+use serde_json::Result;
+use sqparse::ast::{FunctionDeclarationStatement, StatementType, StructProperty, Type};
 use sqparse::token::TokenLine;
-use sqparse::{parse, tokenize, TokenItem};
+use sqparse::{parse, tokenize};
+
+#[derive(Serialize, Deserialize)]
+struct Mod {
+    Name: String,
+    Description: String,
+}
 
 #[derive(Debug, Clone)]
 struct FunctionInfo<'a> {
@@ -40,21 +43,23 @@ fn get_head(page: &str, mod_name: &str) -> String {
     format!("<head><title>{page} - {mod_name}</title><link rel=\"stylesheet\" href=\"../resource/shared.css\"></head>")
 }
 
-fn get_extension_from_filename(filename: &str) -> Option<&str> {
-    Path::new(filename).extension().and_then(OsStr::to_str)
-}
-
 fn generate_docs_for_mods(path: OsString) -> io::Result<()> {
     let mut sub_directories = Vec::<std::path::PathBuf>::new();
     let mut found_mod = false;
+
     for entry in fs::read_dir(path)? {
         let entry = entry?;
         let mut path = entry.path();
         if path.is_dir() {
             sub_directories.push(path);
         } else if entry.file_name() == "mod.json" {
+            let mod_json = fs::read_to_string(path.clone())?;
+            let m: Mod = serde_json::from_str(&mod_json)?;
+
+            println!("generating docs for {}", m.Name);
+
             path.pop();
-            println!("located mod root at {:#?}", path);
+            // println!("located mod root at {:#?}", path);
             path.push("mod/scripts/vscripts/");
             found_mod = true;
             generate_docs_for_mod(path.into())?;
@@ -126,7 +131,7 @@ fn generate_docs_for_mod(path: OsString) -> io::Result<()> {
     );
 
     for v in documented_functions {
-        println!("generating docs for {}", v.identifier);
+        // println!("generating docs for function {}", v.identifier);
         write_function_html(v, &sidebar)?;
     }
 
@@ -147,37 +152,6 @@ fn get_all_scripts(path: &OsString) -> io::Result<Vec<std::path::PathBuf>> {
     }
 
     Ok(scripts)
-}
-
-fn get_globals_info_of_file<'a>(
-    path: OsString,
-) -> io::Result<(Vec<FunctionInfo<'a>>, Vec<&'a StructInfo<'a>>)> {
-    let mut fns = Vec::<FunctionInfo>::new();
-    let mut sts = Vec::<&StructInfo>::new();
-
-    println!("parsing {path:?}");
-    let binding = fs::read_to_string(path).expect("Failed reading file");
-    let tokens = tokenize(&binding, sqparse::Flavor::SquirrelRespawn).unwrap();
-    let ast = parse(&tokens).unwrap();
-
-    let mut document_all_methods = false;
-    let mut expected_methods = std::collections::HashSet::<&str>::new();
-    let mut documented_methods = Vec::<FunctionInfo>::new();
-    let mut documented_structs = Vec::<StructInfo>::new();
-
-    Ok((fns, sts))
-}
-
-fn write_struct_html(s: &StructInfo, sidebar: &String) -> std::io::Result<()> {
-    let mut file = fs::File::create(format!("out/st_{}.html", s.identifier));
-    write!(file?, "{}", get_struct_representation(s, sidebar))?;
-    Ok(())
-}
-
-fn get_struct_representation(s: &StructInfo, sidebar: &String) -> String {
-    let head = get_head(s.identifier, "ModName");
-    let rep = html_escape::encode_text(&format!(""));
-    format!("")
 }
 
 fn write_function_html(f: &FunctionInfo, sidebar: &String) -> std::io::Result<()> {
