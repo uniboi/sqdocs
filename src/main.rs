@@ -3,7 +3,6 @@ mod rep;
 use std::{ffi::OsString, fs, io, io::Write};
 
 use serde::{Deserialize, Serialize};
-use serde_json::Result;
 use sqparse::ast::{FunctionDeclarationStatement, StatementType, StructProperty, Type};
 use sqparse::token::TokenLine;
 use sqparse::{parse, tokenize};
@@ -62,7 +61,7 @@ fn generate_docs_for_mods(path: OsString) -> io::Result<()> {
             // println!("located mod root at {:#?}", path);
             path.push("mod/scripts/vscripts/");
             found_mod = true;
-            generate_docs_for_mod(path.into())?;
+            generate_docs_for_mod(path.into(), m.Name)?;
         }
     }
     if !found_mod {
@@ -73,7 +72,7 @@ fn generate_docs_for_mods(path: OsString) -> io::Result<()> {
     Ok(())
 }
 
-fn generate_docs_for_mod(path: OsString) -> io::Result<()> {
+fn generate_docs_for_mod(path: OsString, mod_name: String) -> io::Result<()> {
     let mut document_all_methods = false;
     let mut expected_methods = std::collections::HashSet::<&str>::new();
 
@@ -132,7 +131,7 @@ fn generate_docs_for_mod(path: OsString) -> io::Result<()> {
 
     for v in documented_functions {
         // println!("generating docs for function {}", v.identifier);
-        write_function_html(v, &sidebar)?;
+        write_function_html(v, &sidebar, &mod_name)?;
     }
 
     Ok(())
@@ -154,14 +153,14 @@ fn get_all_scripts(path: &OsString) -> io::Result<Vec<std::path::PathBuf>> {
     Ok(scripts)
 }
 
-fn write_function_html(f: &FunctionInfo, sidebar: &String) -> std::io::Result<()> {
+fn write_function_html(f: &FunctionInfo, sidebar: &String, mod_name: &String) -> std::io::Result<()> {
     let mut file = fs::File::create(format!("out/fn_{}.html", f.identifier))?;
-    write!(file, "{}", get_function_representation(f, sidebar))?;
+    write!(file, "{}", get_function_representation(f, sidebar, mod_name))?;
     Ok(())
 }
 
-fn get_function_representation(f: &FunctionInfo, sidebar: &String) -> String {
-    let head = get_head(f.identifier, "ModName");
+fn get_function_representation(f: &FunctionInfo, sidebar: &String, mod_name: &String) -> String {
+    let head = get_head(f.identifier, mod_name);
     let rep = html_escape::encode_text(&format!(
         "{} function {}({})",
         rep::get_type_rep(&f.decl.return_type, 0),

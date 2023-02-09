@@ -190,6 +190,8 @@ dependencies = [
  "html-escape",
  "markdown",
  "once_cell",
+ "serde",
+ "serde_json",
  "sqparse",
 ]
 
