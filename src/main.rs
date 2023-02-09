@@ -34,17 +34,23 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let path = args.get(1).expect("no path to directory was provided");
 
-    // generate_all_docs(OsString::from(path)).unwrap();
-    generate_docs_for_mods(OsString::from(path)).unwrap();
+    fs::remove_dir_all("out").unwrap();
+    fs::create_dir("out").unwrap();
+
+    let mods = generate_docs_for_mods(OsString::from(path)).unwrap();
+    generate_collection_page(mods).unwrap();
 }
 
-fn get_head(page: &str, mod_name: &str) -> String {
-    format!("<head><title>{page} - {mod_name}</title><link rel=\"stylesheet\" href=\"../resource/shared.css\"></head>")
+fn get_head(page: &str, mod_name: &str, depth: usize) -> String {
+    let pre = "../".repeat(depth);
+    format!("<head><title>{page} - {mod_name}</title><link rel=\"stylesheet\" href=\"{pre}resource/shared.css\"></head>")
 }
 
-fn generate_docs_for_mods(path: OsString) -> io::Result<()> {
+fn generate_docs_for_mods(path: OsString) -> io::Result<Vec<Mod>> {
     let mut sub_directories = Vec::<std::path::PathBuf>::new();
     let mut found_mod = false;
+
+    let mut mods = Vec::new();
 
     for entry in fs::read_dir(path)? {
         let entry = entry?;
@@ -61,18 +67,37 @@ fn generate_docs_for_mods(path: OsString) -> io::Result<()> {
             // println!("located mod root at {:#?}", path);
             path.push("mod/scripts/vscripts/");
             found_mod = true;
-            generate_docs_for_mod(path.into(), m.Name)?;
+            generate_docs_for_mod(path.into(), &m)?;
+            mods.push(m);
         }
     }
     if !found_mod {
         for path in sub_directories {
-            generate_docs_for_mods(path.into())?;
+            mods.append(&mut generate_docs_for_mods(path.into())?);
         }
     }
+
+    Ok(mods)
+}
+
+fn generate_collection_page(mods: Vec<Mod>) -> io::Result<()> {
+    let mut file = fs::File::create("out/collection.html")?;
+    let head = get_head("Index", "Collection", 1);
+    println!("{}", mods.len());
+    let mod_list = mods
+        .iter()
+        .map(|m| format!("<li><a href=\"./{}/mod/mod.html\">{}</a></li>", m.Name, m.Name))
+        .collect::<Vec<_>>()
+        .join("");
+    let body = format!("<ul>{mod_list}</ul>");
+    write!(
+        file,
+        "<!DOCTYPE html><html>{head}<body>{body}</body></html>",
+    )?;
     Ok(())
 }
 
-fn generate_docs_for_mod(path: OsString, mod_name: String) -> io::Result<()> {
+fn generate_docs_for_mod(path: OsString, m: &Mod) -> io::Result<()> {
     let mut document_all_methods = false;
     let mut expected_methods = std::collections::HashSet::<&str>::new();
 
@@ -99,7 +124,7 @@ fn generate_docs_for_mod(path: OsString, mod_name: String) -> io::Result<()> {
             match statement.ty {
                 StatementType::FunctionDeclaration(d) => {
                     if document_all_methods || expected_methods.contains(d.name.last_item.value) {
-                        println!("{:#?}", d);
+                        // println!("{:#?}", d);
                         documented_functions.push(Box::leak(Box::new(FunctionInfo {
                             decl: d.clone(),
                             identifier: d.name.last_item.value,
@@ -123,16 +148,25 @@ fn generate_docs_for_mod(path: OsString, mod_name: String) -> io::Result<()> {
     }
 
     let sidebar = format!(
-    	"<nav class=\"sidebar\"><div class=\"sidebar-logo-container\"><img src=\"../resource/nut.png\"></div><div class=\"sidebar-elems\"><h3>Functions</h3><ul class=\"sidebar-block\">{}</ul><h3>Structs</h3><ul class=\"sidebar-block\">{}</ul></div></nav>",
-    	documented_functions.iter().map(|f|format!("<li><a href=\"./fn_{}.html\" title=\"temp\">{}</a></li>", f.identifier,f.identifier)).collect::<String>(),
+    	"<nav class=\"sidebar\"><div class=\"sidebar-logo-container\"><img src=\"../../../resource/nut.png\"></div><div class=\"sidebar-elems\"><h3>Functions</h3><ul class=\"sidebar-block\">{}</ul><h3>Structs</h3><ul class=\"sidebar-block\">{}</ul></div></nav>",
+    	documented_functions.iter().map(|f|format!("<li><a href=\"../functions/{}.html\" title=\"temp\">{}</a></li>", f.identifier,f.identifier)).collect::<String>(),
     	// documented_structs.iter().map(|s|format!("<li><a href=\"./st_{}.html\">{}</a></li>",s.identifier ,s.identifier)).collect::<String>()
     	""
     );
 
+    fs::create_dir(format!("out/{}", m.Name))?;
+    fs::create_dir(format!("out/{}/mod", m.Name))?;
+    fs::create_dir(format!("out/{}/functions", m.Name))?;
+    fs::create_dir(format!("out/{}/structs", m.Name))?; // TODO
+    fs::create_dir(format!("out/{}/enums", m.Name))?; // TODO
+    fs::create_dir(format!("out/{}/globals", m.Name))?; // TODO
+
     for v in documented_functions {
         // println!("generating docs for function {}", v.identifier);
-        write_function_html(v, &sidebar, &mod_name)?;
+        write_function_html(v, &sidebar, &m.Name)?;
     }
+
+    write_mod_index(&sidebar, m)?;
 
     Ok(())
 }
@@ -153,14 +187,34 @@ fn get_all_scripts(path: &OsString) -> io::Result<Vec<std::path::PathBuf>> {
     Ok(scripts)
 }
 
-fn write_function_html(f: &FunctionInfo, sidebar: &String, mod_name: &String) -> std::io::Result<()> {
-    let mut file = fs::File::create(format!("out/fn_{}.html", f.identifier))?;
-    write!(file, "{}", get_function_representation(f, sidebar, mod_name))?;
+fn write_mod_index(sidebar: &String, m: &Mod) -> io::Result<()> {
+    let mut file = fs::File::create(format!("out/{}/mod/mod.html", m.Name))?;
+    let head = get_head("Index", &m.Name, 3);
+    write!(
+        file,
+        "<!DOCTYPE html><html>{head}<body>{sidebar}<main><h1>{}</h1>{}</main></body></html>",
+		m.Name,
+        markdown::to_html(&m.Description)
+    )?;
+    Ok(())
+}
+
+fn write_function_html(
+    f: &FunctionInfo,
+    sidebar: &String,
+    mod_name: &String,
+) -> std::io::Result<()> {
+    let mut file = fs::File::create(format!("out/{mod_name}/functions/{}.html", f.identifier))?;
+    write!(
+        file,
+        "{}",
+        get_function_representation(f, sidebar, mod_name)
+    )?;
     Ok(())
 }
 
 fn get_function_representation(f: &FunctionInfo, sidebar: &String, mod_name: &String) -> String {
-    let head = get_head(f.identifier, mod_name);
+    let head = get_head(f.identifier, mod_name, 3);
     let rep = html_escape::encode_text(&format!(
         "{} function {}({})",
         rep::get_type_rep(&f.decl.return_type, 0),
