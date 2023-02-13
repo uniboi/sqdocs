@@ -1,4 +1,5 @@
 mod rep;
+mod template;
 
 use std::path::PathBuf;
 use std::{ffi::OsString, fs, io, io::Write};
@@ -9,6 +10,7 @@ use sqparse::ast::{
 };
 use sqparse::token::TokenLine;
 use sqparse::{parse, tokenize};
+use template::{get_head, get_sidebar, SidebarHeader, SidebarSection};
 
 #[derive(Serialize, Deserialize)]
 struct ModManifest {
@@ -48,11 +50,6 @@ fn main() {
 
     let mods = generate_docs_for_mods(OsString::from(path)).unwrap();
     generate_collection_page(mods).unwrap();
-}
-
-fn get_head(page: &str, mod_name: &str, depth: usize) -> String {
-    let pre = "../".repeat(depth);
-    format!("<head><title>{page} - {mod_name}</title><link rel=\"stylesheet\" href=\"{pre}resource/shared.css\"></head>")
 }
 
 fn generate_docs_for_mods(path: OsString) -> io::Result<Vec<Mod>> {
@@ -187,12 +184,40 @@ fn generate_docs_for_mod(
         }
     }
 
-    let sidebar = format!(
-        "<nav class=\"sidebar\"><div class=\"sidebar-logo-container\"><img src=\"../../../resource/nut.png\"></div><div class=\"sidebar-elems\"><h3>Mods</h3><ul class=\"sidebar-block\">{}</ul><h3>Functions</h3><ul class=\"sidebar-block\">{}</ul><h3>Structs</h3><ul class=\"sidebar-block\">{}</ul></div></nav>",
-        all_mod_names.iter().map(|n|format!("<li><a href=\"../../{}/mod/mod.html\" title=\"temp\">{}</a></li>", n, n)).collect::<String>(),
-        documented_functions.iter().map(|f|format!("<li><a href=\"../functions/{}.html\" title=\"temp\">{}</a></li>", f.identifier, f.identifier)).collect::<String>(),
-        documented_structs.iter().map(|s|format!("<li><a href=\"../structs/{}.html\" title=\"temp\">{}</a></li>", s.identifier, s.identifier)).collect::<String>(),
-    );
+    let sidebar_contents = Vec::from([
+        SidebarSection {
+            title: "Mods",
+            headers: all_mod_names
+                .iter()
+                .map(|m| SidebarHeader {
+                    content: m,
+                    location: format!("../../{}/mod/mod.html", m),
+                })
+                .collect::<Vec<_>>(),
+        },
+        SidebarSection {
+            title: "Functions",
+            headers: documented_functions
+                .iter()
+                .map(|m| SidebarHeader {
+                    content: m.identifier,
+                    location: format!("../functions/{}.html", m.identifier),
+                })
+                .collect::<Vec<_>>(),
+        },
+        SidebarSection {
+            title: "Structs",
+            headers: documented_structs
+                .iter()
+                .map(|m| SidebarHeader {
+                    content: m.identifier,
+                    location: format!("../structs/{}.html", m.identifier),
+                })
+                .collect::<Vec<_>>(),
+        },
+    ]);
+
+    let sidebar = get_sidebar(sidebar_contents);
 
     fs::create_dir(format!("out/{}", m.Name))?;
     fs::create_dir(format!("out/{}/mod", m.Name))?;
@@ -268,16 +293,10 @@ fn get_function_representation(f: &FunctionInfo, sidebar: &String, mod_name: &St
         rep::get_function_param_rep(&f.decl.declaration.args, 0),
     ))
     .to_string();
-    let block = format!("<pre class=\"code-block\"><code>{rep}</code></pre>");
-    let description = format!(
-        "<details open><summary>Expand description</summary>{}</details>",
-        f.description
-    );
-    let body = format!(
-        "<body>{sidebar}<main><h1>{}</h1>{block}{description}</main></body>",
-        f.identifier,
-    );
-    format!("<!DOCTYPE html><html>{head}{body}</html>")
+    let block = template::get_declaration_block(&rep);
+    let description = template::get_description_block(&String::from(f.identifier));
+    let body = template::get_body(sidebar, &String::from(f.identifier), &block, &description);
+    template::wrap_html(&head, &body)
 }
 
 fn write_struct_html(s: &StructInfo, sidebar: &String, mod_name: &String) -> io::Result<()> {
@@ -307,17 +326,11 @@ fn get_struct_representation(s: &StructInfo, sidebar: &String, mod_name: &String
             .collect::<Vec<_>>()
             .join("\n")
     );
-    let rep = html_escape::encode_text(&r);
-    let block = format!("<pre class=\"code-block\"><code>{rep}</code></pre>");
-    let description = format!(
-        "<details open><summary>Expand description</summary>{}</details>",
-        s.description
-    );
-    let body = format!(
-        "<body>{sidebar}<main><h1>{}</h1>{block}{description}</main></body>",
-        s.identifier,
-    );
-    format!("<!DOCTYPE html><html>{head}{body}</html>")
+    let rep = template::get_declaration_block(&r);
+    let block = template::get_declaration_block(&rep);
+    let description = template::get_description_block(&s.description);
+    let body = template::get_body(sidebar, &String::from(s.identifier), &block, &description);
+    template::wrap_html(&head, &body)
 }
 
 fn get_function_comments(d: FunctionDeclarationStatement) -> String {
