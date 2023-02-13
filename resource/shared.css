@@ -1,5 +1,5 @@
 :root {
-	--sidebar-width: 150px
+	--sidebar-width: 250px
 }
 
 
@@ -25,7 +25,7 @@ p>code {
 }
 
 main {
-	padding-left: var(--sidebar-width);
+	margin-left: var(--sidebar-width);
 }
 
 /* .code-block {

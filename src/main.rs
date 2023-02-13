@@ -4,7 +4,9 @@ use std::path::PathBuf;
 use std::{ffi::OsString, fs, io, io::Write};
 
 use serde::{Deserialize, Serialize};
-use sqparse::ast::{FunctionDeclarationStatement, StatementType, StructProperty, Type};
+use sqparse::ast::{
+    FunctionDeclarationStatement, StatementType, StructDeclarationStatement, StructProperty, Type,
+};
 use sqparse::token::TokenLine;
 use sqparse::{parse, tokenize};
 
@@ -33,7 +35,7 @@ struct FunctionInfo<'a> {
 #[derive(Debug, Clone)]
 struct StructInfo<'a> {
     identifier: &'a str,
-    properties: Vec<StructProperty<'a>>,
+    decl: StructDeclarationStatement<'a>,
 }
 
 fn main() {
@@ -136,6 +138,7 @@ fn generate_docs_for_mod(
     let mut files = Vec::new();
     let mut file_tokens = Vec::new();
     let mut documented_functions = Vec::new();
+    let mut documented_structs = Vec::new();
 
     for script in scripts {
         let script_content = fs::read_to_string(script)?;
@@ -168,7 +171,12 @@ fn generate_docs_for_mod(
                 StatementType::Global(d) => match &d.declaration {
                     sqparse::ast::GlobalDeclaration::Function { function: _, name } => {
                         expected_methods.insert(name.last_item.value);
-                        ()
+                    }
+                    sqparse::ast::GlobalDeclaration::Struct(s) => {
+                        documented_structs.push(StructInfo {
+                            decl: s.clone(),
+                            identifier: s.name.value,
+                        })
                     }
                     _ => (),
                 },
@@ -179,10 +187,9 @@ fn generate_docs_for_mod(
 
     let sidebar = format!(
         "<nav class=\"sidebar\"><div class=\"sidebar-logo-container\"><img src=\"../../../resource/nut.png\"></div><div class=\"sidebar-elems\"><h3>Mods</h3><ul class=\"sidebar-block\">{}</ul><h3>Functions</h3><ul class=\"sidebar-block\">{}</ul><h3>Structs</h3><ul class=\"sidebar-block\">{}</ul></div></nav>",
-        all_mod_names.iter().map(|n|format!("<li><a href=\"../../{}/mod/mod.html\" title=\"temp\">{}</a></li>", n,n)).collect::<String>(),
-        documented_functions.iter().map(|f|format!("<li><a href=\"../functions/{}.html\" title=\"temp\">{}</a></li>", f.identifier,f.identifier)).collect::<String>(),
-        // documented_structs.iter().map(|s|format!("<li><a href=\"./st_{}.html\">{}</a></li>",s.identifier ,s.identifier)).collect::<String>()
-        ""
+        all_mod_names.iter().map(|n|format!("<li><a href=\"../../{}/mod/mod.html\" title=\"temp\">{}</a></li>", n, n)).collect::<String>(),
+        documented_functions.iter().map(|f|format!("<li><a href=\"../functions/{}.html\" title=\"temp\">{}</a></li>", f.identifier, f.identifier)).collect::<String>(),
+        documented_structs.iter().map(|s|format!("<li><a href=\"../structs/{}.html\" title=\"temp\">{}</a></li>", s.identifier, s.identifier)).collect::<String>(),
     );
 
     fs::create_dir(format!("out/{}", m.Name))?;
