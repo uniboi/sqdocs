@@ -36,6 +36,7 @@ struct FunctionInfo<'a> {
 struct StructInfo<'a> {
     identifier: &'a str,
     decl: StructDeclarationStatement<'a>,
+    description: String,
 }
 
 fn main() {
@@ -176,6 +177,7 @@ fn generate_docs_for_mod(
                         documented_structs.push(StructInfo {
                             decl: s.clone(),
                             identifier: s.name.value,
+                            description: format_comments(&s.struct_.before_lines),
                         })
                     }
                     _ => (),
@@ -278,13 +280,6 @@ fn get_function_representation(f: &FunctionInfo, sidebar: &String, mod_name: &St
     format!("<!DOCTYPE html><html>{head}{body}</html>")
 }
 
-fn get_function_comments(d: FunctionDeclarationStatement) -> String {
-    format_comments(match d.return_type {
-        Some(ty) => get_type_comments(ty),
-        None => &d.function.before_lines,
-    })
-}
-
 fn write_struct_html(s: &StructInfo, sidebar: &String, mod_name: &String) -> io::Result<()> {
     let mut file = fs::File::create(format!("out/{mod_name}/structs/{}.html", s.identifier))?;
     write!(file, "{}", get_struct_representation(s, sidebar, mod_name))?;
@@ -312,14 +307,24 @@ fn get_struct_representation(s: &StructInfo, sidebar: &String, mod_name: &String
             .collect::<Vec<_>>()
             .join("\n")
     );
-	let rep = html_escape::encode_text(&r);
+    let rep = html_escape::encode_text(&r);
     let block = format!("<pre class=\"code-block\"><code>{rep}</code></pre>");
-    let description = "";
+    let description = format!(
+        "<details open><summary>Expand description</summary>{}</details>",
+        s.description
+    );
     let body = format!(
         "<body>{sidebar}<main><h1>{}</h1>{block}{description}</main></body>",
         s.identifier,
     );
     format!("<!DOCTYPE html><html>{head}{body}</html>")
+}
+
+fn get_function_comments(d: FunctionDeclarationStatement) -> String {
+    format_comments(match d.return_type {
+        Some(ty) => get_type_comments(ty),
+        None => &d.function.before_lines,
+    })
 }
 
 fn get_type_comments(ty: Type) -> &Vec<TokenLine> {
