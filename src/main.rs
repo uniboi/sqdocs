@@ -204,6 +204,10 @@ fn generate_docs_for_mod(
         write_function_html(&v, &sidebar, &m.Name)?;
     }
 
+    for v in documented_structs {
+        write_struct_html(&v, &sidebar, &m.Name)?;
+    }
+
     write_mod_index(&sidebar, m)?;
 
     Ok(())
@@ -279,6 +283,43 @@ fn get_function_comments(d: FunctionDeclarationStatement) -> String {
         Some(ty) => get_type_comments(ty),
         None => &d.function.before_lines,
     })
+}
+
+fn write_struct_html(s: &StructInfo, sidebar: &String, mod_name: &String) -> io::Result<()> {
+    let mut file = fs::File::create(format!("out/{mod_name}/structs/{}.html", s.identifier))?;
+    write!(file, "{}", get_struct_representation(s, sidebar, mod_name))?;
+    Ok(())
+}
+
+fn get_struct_representation(s: &StructInfo, sidebar: &String, mod_name: &String) -> String {
+    let head = get_head(s.identifier, mod_name, 3);
+    let r = format!(
+        "struct {} {{\n{}\n}}",
+        s.identifier,
+        s.decl
+            .declaration
+            .properties
+            .iter()
+            .map(|p| match &p.initializer {
+                Some(i) => format!(
+                    "  {} {} = {}",
+                    rep::get_typed_type_rep(&p.ty, 3),
+                    p.name.value,
+                    rep::get_expression_rep(&*i.value, 2)
+                ),
+                None => format!("  {} {}", rep::get_typed_type_rep(&p.ty, 3), p.name.value),
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    );
+	let rep = html_escape::encode_text(&r);
+    let block = format!("<pre class=\"code-block\"><code>{rep}</code></pre>");
+    let description = "";
+    let body = format!(
+        "<body>{sidebar}<main><h1>{}</h1>{block}{description}</main></body>",
+        s.identifier,
+    );
+    format!("<!DOCTYPE html><html>{head}{body}</html>")
 }
 
 fn get_type_comments(ty: Type) -> &Vec<TokenLine> {

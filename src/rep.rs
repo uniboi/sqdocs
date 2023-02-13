@@ -344,7 +344,7 @@
 		}
 	}
 	
-	fn get_typed_type_rep(ty: &Type, depth: usize) -> String {
+	pub fn get_typed_type_rep(ty: &Type, depth: usize) -> String {
 		match &ty {
 			Type::Local(_) => String::from("local"),
 			Type::Var(_) => String::from("var"),
