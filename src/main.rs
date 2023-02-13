@@ -1,5 +1,6 @@
 mod rep;
 
+use std::path::PathBuf;
 use std::{ffi::OsString, fs, io, io::Write};
 
 use serde::{Deserialize, Serialize};
@@ -8,9 +9,14 @@ use sqparse::token::TokenLine;
 use sqparse::{parse, tokenize};
 
 #[derive(Serialize, Deserialize)]
-struct Mod {
+struct ModManifest {
     Name: String,
     Description: String,
+}
+
+struct Mod {
+	manifest: ModManifest,
+	path: OsString,
 }
 
 #[derive(Debug, Clone)]
@@ -47,6 +53,20 @@ fn get_head(page: &str, mod_name: &str, depth: usize) -> String {
 }
 
 fn generate_docs_for_mods(path: OsString) -> io::Result<Vec<Mod>> {
+    let mods = get_all_mods_in_dir(&path)?;
+
+    for m in &mods {
+        generate_docs_for_mod(
+            &m.path,
+			&m.manifest,
+            mods.iter().map(|m: &Mod| &m.manifest.Name).collect(),
+        )?;
+    }
+
+    Ok(mods)
+}
+
+fn get_all_mods_in_dir(path: &OsString) -> io::Result<Vec<Mod>> {
     let mut sub_directories = Vec::<std::path::PathBuf>::new();
     let mut found_mod = false;
 
@@ -59,21 +79,23 @@ fn generate_docs_for_mods(path: OsString) -> io::Result<Vec<Mod>> {
             sub_directories.push(path);
         } else if entry.file_name() == "mod.json" {
             let mod_json = fs::read_to_string(path.clone())?;
-            let m: Mod = serde_json::from_str(&mod_json)?;
+            let mf: ModManifest = serde_json::from_str(&mod_json)?;
 
-            println!("generating docs for {}", m.Name);
+            println!("generating docs for {}", mf.Name);
 
             path.pop();
             // println!("located mod root at {:#?}", path);
             path.push("mod/scripts/vscripts/");
             found_mod = true;
-            generate_docs_for_mod(path.into(), &m)?;
-            mods.push(m);
+            mods.push(Mod {
+				manifest: mf,
+				path: OsString::from(path),
+			});
         }
     }
     if !found_mod {
         for path in sub_directories {
-            mods.append(&mut generate_docs_for_mods(path.into())?);
+            mods.append(&mut get_all_mods_in_dir(&path.into())?);
         }
     }
 
@@ -83,10 +105,14 @@ fn generate_docs_for_mods(path: OsString) -> io::Result<Vec<Mod>> {
 fn generate_collection_page(mods: Vec<Mod>) -> io::Result<()> {
     let mut file = fs::File::create("out/collection.html")?;
     let head = get_head("Index", "Collection", 1);
-    println!("{}", mods.len());
     let mod_list = mods
         .iter()
-        .map(|m| format!("<li><a href=\"./{}/mod/mod.html\">{}</a></li>", m.Name, m.Name))
+        .map(|m| {
+            format!(
+                "<li><a href=\"./{}/mod/mod.html\">{}</a></li>",
+                m.manifest.Name, m.manifest.Name
+            )
+        })
         .collect::<Vec<_>>()
         .join("");
     let body = format!("<ul>{mod_list}</ul>");
@@ -97,7 +123,7 @@ fn generate_collection_page(mods: Vec<Mod>) -> io::Result<()> {
     Ok(())
 }
 
-fn generate_docs_for_mod(path: OsString, m: &Mod) -> io::Result<()> {
+fn generate_docs_for_mod(path: &OsString, m: &ModManifest, all_mod_names: Vec<&String>) -> io::Result<()> {
     let mut document_all_methods = false;
     let mut expected_methods = std::collections::HashSet::<&str>::new();
 
@@ -147,11 +173,14 @@ fn generate_docs_for_mod(path: OsString, m: &Mod) -> io::Result<()> {
         }
     }
 
+    println!("{}", all_mod_names.len());
+
     let sidebar = format!(
-    	"<nav class=\"sidebar\"><div class=\"sidebar-logo-container\"><img src=\"../../../resource/nut.png\"></div><div class=\"sidebar-elems\"><h3>Functions</h3><ul class=\"sidebar-block\">{}</ul><h3>Structs</h3><ul class=\"sidebar-block\">{}</ul></div></nav>",
-    	documented_functions.iter().map(|f|format!("<li><a href=\"../functions/{}.html\" title=\"temp\">{}</a></li>", f.identifier,f.identifier)).collect::<String>(),
-    	// documented_structs.iter().map(|s|format!("<li><a href=\"./st_{}.html\">{}</a></li>",s.identifier ,s.identifier)).collect::<String>()
-    	""
+        "<nav class=\"sidebar\"><div class=\"sidebar-logo-container\"><img src=\"../../../resource/nut.png\"></div><div class=\"sidebar-elems\"><h3>Mods</h3><ul class=\"sidebar-block\">{}</ul><h3>Functions</h3><ul class=\"sidebar-block\">{}</ul><h3>Structs</h3><ul class=\"sidebar-block\">{}</ul></div></nav>",
+        all_mod_names.iter().map(|n|format!("<li><a href=\"../../{}/mod/mod.html\" title=\"temp\">{}</a></li>", n,n)).collect::<String>(),
+        documented_functions.iter().map(|f|format!("<li><a href=\"../functions/{}.html\" title=\"temp\">{}</a></li>", f.identifier,f.identifier)).collect::<String>(),
+        // documented_structs.iter().map(|s|format!("<li><a href=\"./st_{}.html\">{}</a></li>",s.identifier ,s.identifier)).collect::<String>()
+        ""
     );
 
     fs::create_dir(format!("out/{}", m.Name))?;
@@ -179,7 +208,7 @@ fn get_all_scripts(path: &OsString) -> io::Result<Vec<std::path::PathBuf>> {
         let path = entry.path();
         if path.is_dir() {
             scripts.append(&mut get_all_scripts(&path.into_os_string())?);
-        } else if path.extension().unwrap() == "nut" || path.extension().unwrap() == "gnut" {
+        } else if path.extension().unwrap_or(&OsString::new()) == "nut" || path.extension().unwrap_or(&OsString::new()) == "gnut" {
             scripts.push(path);
         }
     }
@@ -187,13 +216,13 @@ fn get_all_scripts(path: &OsString) -> io::Result<Vec<std::path::PathBuf>> {
     Ok(scripts)
 }
 
-fn write_mod_index(sidebar: &String, m: &Mod) -> io::Result<()> {
+fn write_mod_index(sidebar: &String, m: &ModManifest) -> io::Result<()> {
     let mut file = fs::File::create(format!("out/{}/mod/mod.html", m.Name))?;
     let head = get_head("Index", &m.Name, 3);
     write!(
         file,
         "<!DOCTYPE html><html>{head}<body>{sidebar}<main><h1>{}</h1>{}</main></body></html>",
-		m.Name,
+        m.Name,
         markdown::to_html(&m.Description)
     )?;
     Ok(())
@@ -265,12 +294,29 @@ fn format_comments(comments: &Vec<TokenLine>) -> String {
         match comments.iter().last() {
             Some(line) => match line.comments.last() {
                 Some(comment) => match comment {
-                    sqparse::token::Comment::MultiLine(c) => markdown::to_html(
-                        &c.split("\n")
-                            .map(|s| s.trim())
-                            .collect::<Vec<_>>()
-                            .join("\n")
-                    ),
+                    sqparse::token::Comment::MultiLine(c) => {
+                        let mut comments = c.split("\n");
+                        // let content_index;
+                        // let prefix;
+                        // let first = comments.nth(0).unwrap_or(&no_desc).as_bytes();
+
+                        // for i in 0..first.len() {
+                        //     let c = first.get(i).unwrap();
+                        //     if c == &(' ' as u8) || c == &('\t' as u8) || c == &('*' as u8) {
+                        //         continue;
+                        //     }
+                        //     content_index = i;
+                        //     prefix = first[..i].join("");
+                        //     break;
+                        // }
+
+                        markdown::to_html(
+                            &c.split("\n")
+                                .map(|s| s.trim())
+                                .collect::<Vec<_>>()
+                                .join("\n"),
+                        )
+                    }
                     sqparse::token::Comment::SingleLine(c) => {
                         let t = c.trim();
                         String::from(if t.len() > 0 { t } else { c })
