@@ -15,8 +15,8 @@ struct ModManifest {
 }
 
 struct Mod {
-	manifest: ModManifest,
-	path: OsString,
+    manifest: ModManifest,
+    path: OsString,
 }
 
 #[derive(Debug, Clone)]
@@ -58,7 +58,7 @@ fn generate_docs_for_mods(path: OsString) -> io::Result<Vec<Mod>> {
     for m in &mods {
         generate_docs_for_mod(
             &m.path,
-			&m.manifest,
+            &m.manifest,
             mods.iter().map(|m: &Mod| &m.manifest.Name).collect(),
         )?;
     }
@@ -88,9 +88,9 @@ fn get_all_mods_in_dir(path: &OsString) -> io::Result<Vec<Mod>> {
             path.push("mod/scripts/vscripts/");
             found_mod = true;
             mods.push(Mod {
-				manifest: mf,
-				path: OsString::from(path),
-			});
+                manifest: mf,
+                path: OsString::from(path),
+            });
         }
     }
     if !found_mod {
@@ -123,7 +123,11 @@ fn generate_collection_page(mods: Vec<Mod>) -> io::Result<()> {
     Ok(())
 }
 
-fn generate_docs_for_mod(path: &OsString, m: &ModManifest, all_mod_names: Vec<&String>) -> io::Result<()> {
+fn generate_docs_for_mod(
+    path: &OsString,
+    m: &ModManifest,
+    all_mod_names: Vec<&String>,
+) -> io::Result<()> {
     let mut document_all_methods = false;
     let mut expected_methods = std::collections::HashSet::<&str>::new();
 
@@ -151,11 +155,11 @@ fn generate_docs_for_mod(path: &OsString, m: &ModManifest, all_mod_names: Vec<&S
                 StatementType::FunctionDeclaration(d) => {
                     if document_all_methods || expected_methods.contains(d.name.last_item.value) {
                         // println!("{:#?}", d);
-                        documented_functions.push(Box::leak(Box::new(FunctionInfo {
+                        documented_functions.push(FunctionInfo {
                             decl: d.clone(),
                             identifier: d.name.last_item.value,
                             description: get_function_comments(d),
-                        })));
+                        });
                     }
                 }
                 StatementType::GlobalizeAllFunctions(_) => {
@@ -172,8 +176,6 @@ fn generate_docs_for_mod(path: &OsString, m: &ModManifest, all_mod_names: Vec<&S
             }
         }
     }
-
-    println!("{}", all_mod_names.len());
 
     let sidebar = format!(
         "<nav class=\"sidebar\"><div class=\"sidebar-logo-container\"><img src=\"../../../resource/nut.png\"></div><div class=\"sidebar-elems\"><h3>Mods</h3><ul class=\"sidebar-block\">{}</ul><h3>Functions</h3><ul class=\"sidebar-block\">{}</ul><h3>Structs</h3><ul class=\"sidebar-block\">{}</ul></div></nav>",
@@ -192,7 +194,7 @@ fn generate_docs_for_mod(path: &OsString, m: &ModManifest, all_mod_names: Vec<&S
 
     for v in documented_functions {
         // println!("generating docs for function {}", v.identifier);
-        write_function_html(v, &sidebar, &m.Name)?;
+        write_function_html(&v, &sidebar, &m.Name)?;
     }
 
     write_mod_index(&sidebar, m)?;
@@ -208,7 +210,9 @@ fn get_all_scripts(path: &OsString) -> io::Result<Vec<std::path::PathBuf>> {
         let path = entry.path();
         if path.is_dir() {
             scripts.append(&mut get_all_scripts(&path.into_os_string())?);
-        } else if path.extension().unwrap_or(&OsString::new()) == "nut" || path.extension().unwrap_or(&OsString::new()) == "gnut" {
+        } else if path.extension().unwrap_or(&OsString::new()) == "nut"
+            || path.extension().unwrap_or(&OsString::new()) == "gnut"
+        {
             scripts.push(path);
         }
     }
